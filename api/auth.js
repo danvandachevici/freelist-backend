@@ -6,6 +6,7 @@ var crypto 		= require ('crypto');
 
 var log 		= require ('../lib/log');
 var tokens 		= require ('../lib/Tokens');
+var errors 		= require ('../lib/Errors');
 
 var private = {};
 var local = {};
@@ -15,7 +16,7 @@ private.getUser = function (env, email, shouldExist) {
 		env.mongo_freelist.users.findOne({email: email}, function (err, doc) {
 			if (err){
 				log.error("Error finding one user:", err);
-				return cb_auto({code: 501, error: "Internal server error"});
+				return cb_auto(errors.internalServerError);
 			}
 			if ( ! doc) {
 				return cb_auto(null, null);
@@ -27,6 +28,10 @@ private.getUser = function (env, email, shouldExist) {
 private.checkPass = function (pass) {
 	return function (results, cb_auto) {
 		var user = results.getUser;
+		if (!user) {
+			log.error("Unknown username")
+			return cb_auto({code: 200, error: "Wrong login"});
+		}
 		var salt = new Buffer(user.salt, 'base64');
 		var hash = crypto.createHmac("sha256", salt).update(pass).digest('hex');
 		if (hash !== user.pass) {
@@ -38,6 +43,10 @@ private.checkPass = function (pass) {
 private.loginToken = function (env, save) {
 	return function (results, cb_auto) {
 		var user = results.getUser || results.createUser;
+		if (!user) {
+			log.error("Unknown username")
+			return cb_auto({code: 200, error: "Wrong login"});
+		}
 		var day = 86400000;
 		var minute = 60000;
 		var expires;
@@ -48,7 +57,7 @@ private.loginToken = function (env, save) {
 		}
 		tokens.generate(env, 'login', user._id, expires, function (err, token){
 			if (err) {
-				return cb_auto({code: 501, error: "Internal server error"});
+				return cb_auto(errors.internalServerError);
 			}
 			cb_auto(null, token);
 		});
@@ -62,7 +71,7 @@ private.verifyEmailToken = function (env) {
 		
 		tokens.generate(env, 'verify', user._id, expires, function (err, token){
 			if (err) {
-				return cb_auto({code: 501, error: "Internal server error"});
+				return cb_auto(errors.internalServerError);
 			}
 			cb_auto(null, token);
 		});
@@ -72,7 +81,7 @@ private.createUser = function (env, email, pass) {
 	return function (results, cb_auto) {
 		var user = results.getUser;
 		if (user && user.email === email) {
-			return cb_auto({code: 409, error:"Conflict"});
+			return cb_auto(errors.userExists);
 		}
 		var user_id = uuidLib.v4().toLowerCase();
 		var salt = crypto.randomBytes(256);
@@ -87,7 +96,7 @@ private.createUser = function (env, email, pass) {
 		env.mongo_freelist.users.insertOne(toInsert, function (err, inserted) {
 			if (err) {
 				log.error("Error inserting user", toInsert, "Error is:", err);
-				return cb_auto({code: 501, error:"Internal server error"});
+				return cb_auto(errors.internalServerError);
 			}
 			cb_auto(null, toInsert);
 		});
@@ -107,10 +116,10 @@ local.signup = function (env) {
 			getUser: private.getUser(env, email),
 			createUser: ['getUser', private.createUser(env, email, pass)],
 			loginToken: ['getUser', 'createUser', private.loginToken(env, save)],
-			verifyEmailToken: ['createUser', private.verifyEmailToken(env)]
+			verifyEmailToken: ['getUser', 'createUser', private.verifyEmailToken(env)]
 		}, function (err, results) {
 			if (err) {
-				resp.status(err.code).send(err.error);
+				resp.status(err.code).send(err.msg);
 				return;
 			}
 			resp.status(200).json({token: results.loginToken});
@@ -130,7 +139,7 @@ local.login = function (env) {
 			loginToken: ['getUser', 'checkPass', private.loginToken(env, save)]
 		}, function (err, results) {
 			if (err) {
-				resp.status(err.code).send(err.error);
+				resp.status(err.code).send(err.msg);
 				return;
 			}
 			resp.status(200).json({token: results.loginToken});
@@ -183,47 +192,7 @@ local.isloggedin = function (env) {
 			}
 		});
 	};
-}
-// local.isadmin = function (env) {
-// 	return function (req, resp) {
-// 		var tkn = req.body.token || null;
-
-// 		if (!tkn) {
-// 			return resp.status(200).send("Wrong login");
-// 		}
-// 		async.auto({
-// 			getToken: function(cb_auto) {
-// 				tkn = tkn.toLowerCase();
-// 				tokens.check(env, 'login', tkn, function (err, t) {
-// 					if (err) {
-// 						// do error stuff here
-// 						return cb_auto(true);
-// 						// resp.status(200).json({status: false});
-// 						// resp.status(200).json({status: user.admin});
-// 					}
-// 					cb_auto(null, t);
-// 				});
-// 			},
-// 			getUser: ['getToken', function(results, cb_auto) {
-// 				env.mongo_freelist.users.findOne({_id: results.getToken.user_id}, function(err, doc) {
-// 					if (err) {
-// 						return cb_auto(true);
-// 					}
-// 					if ( ! doc.admin) {
-// 						return cb_auto(true);
-// 					}
-// 					cb_auto(null);
-// 				});
-// 			}]
-// 		}, function (err, results) {
-// 			if (err) {
-// 				resp.status(200).json({status: false});
-// 			} else {
-// 				resp.status(200).json({status: true});
-// 			}
-// 		});
-// 	};
-// };
+};
 module.exports = function (env) {
 	auth.post("/signup",		local.signup(env));
 	auth.post("/login",			local.login(env));
