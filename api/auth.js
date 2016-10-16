@@ -30,12 +30,12 @@ private.checkPass = function (pass) {
 		var user = results.getUser;
 		if (!user) {
 			log.error("Unknown username")
-			return cb_auto({code: 200, error: "Wrong login"});
+			return cb_auto(errors.wrongLogin);
 		}
 		var salt = new Buffer(user.salt, 'base64');
 		var hash = crypto.createHmac("sha256", salt).update(pass).digest('hex');
 		if (hash !== user.pass) {
-			return cb_auto({code: 200, error: "Wrong login"});
+			return cb_auto(errors.wrongLogin);
 		}
 		cb_auto(null);
 	};
