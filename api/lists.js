@@ -20,13 +20,22 @@ private.treat_result = function (resp) {
 	};
 };
 
-local.getLists = function (env) {
+local.getUserLists = function (env) {
 	return function (req, resp) {
 		var o = {
 			user_id: req.auth.user_id
 		};
 
 		list.getUserLists(env, o, private.treat_result(resp));
+	};
+};
+local.getListDetails = function (env) {
+	return function (req, resp) {
+		var o = {
+			user_id: req.auth.user_id,
+			list_id: req.body.list_id.toLowerCase()
+		};
+		list.getListDetails(env, o, private.treat_result(resp));
 	};
 };
 local.createList = function (env) {
@@ -127,13 +136,14 @@ local.finishItem = function (env) {
 
 
 module.exports = function (env) {
-	auth.post("/getLists",		tokens.authenticateMiddleware(env, 'login'), local.getLists(env));
-	auth.post("/createList",	tokens.authenticateMiddleware(env, 'login'), local.createList(env));
-	auth.post("/deleteList",	tokens.authenticateMiddleware(env, 'login'), local.deleteList(env));
-	auth.post("/changeList",	tokens.authenticateMiddleware(env, 'login'), local.changeList(env));
-	auth.post("/shareList", 	tokens.authenticateMiddleware(env, 'login'), local.shareList(env));
-	auth.post("/addItem",		tokens.authenticateMiddleware(env, 'login'), local.addItem(env));
-	auth.post("/removeItem",	tokens.authenticateMiddleware(env, 'login'), local.removeItem(env));
-	auth.post("/finishItem",	tokens.authenticateMiddleware(env, 'login'), local.finishItem(env));
+	auth.post("/getUserLists",			tokens.authenticateMiddleware(env, 'login'), local.getUserLists(env));
+	auth.post("/getListDetails",		tokens.authenticateMiddleware(env, 'login'), local.getListDetails(env));
+	auth.post("/createList",			tokens.authenticateMiddleware(env, 'login'), local.createList(env));
+	auth.post("/deleteList",			tokens.authenticateMiddleware(env, 'login'), local.deleteList(env));
+	auth.post("/changeList",			tokens.authenticateMiddleware(env, 'login'), local.changeList(env));
+	auth.post("/shareList", 			tokens.authenticateMiddleware(env, 'login'), local.shareList(env));
+	auth.post("/addItem",				tokens.authenticateMiddleware(env, 'login'), local.addItem(env));
+	auth.post("/removeItem",			tokens.authenticateMiddleware(env, 'login'), local.removeItem(env));
+	auth.post("/finishItem",			tokens.authenticateMiddleware(env, 'login'), local.finishItem(env));
 	return auth;
 };
