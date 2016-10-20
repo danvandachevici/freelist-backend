@@ -63,6 +63,6 @@ async.auto({
 	}
 }, function (err, results) {
 	app.listen(config.serverPort, function () {
-		log.info('server is listening on port ' + config.serverPort);
+		log.debug('server is listening on port ' + config.serverPort);
 	});
 });

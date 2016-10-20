@@ -85,10 +85,10 @@ local.shareList = function (env) {
 		list.shareList (env, o, private.treat_result(resp));
 	};
 };
-local.addItem = function (env) {
+local.addItemToList = function (env) {
 	return function (req, resp) {
 		var item 		= req.body.item;
-		var listId 		= req.body.listId.toLowerCase();
+		var list_id 	= req.body.list_id.toLowerCase();
 		var userId 		= req.auth.user_id;
 		var o = {
 			item: req.body.item,
@@ -96,7 +96,7 @@ local.addItem = function (env) {
 			user_id: req.auth.user_id
 		};
 
-		list.addItem(env, o, private.treat_result(resp));
+		list.addItemToList(env, o, private.treat_result(resp));
 	};
 };
 local.removeItem = function (env) {
@@ -133,6 +133,17 @@ local.finishItem = function (env) {
 		list.finishItem(env, o, private.treat_result(resp));
 	};
 };
+local.listItems = function (env) {
+	return function (req, resp) {
+		var list_id 		= req.body.list_id.toLowerCase();
+		var user_id 		= req.auth.user_id;
+		var o = {
+			list_id: list_id,
+			user_id: user_id
+		};
+		list.listItems(env, o, private.treat_result(resp));
+	};
+};
 
 
 module.exports = function (env) {
@@ -142,7 +153,8 @@ module.exports = function (env) {
 	auth.post("/deleteList",			tokens.authenticateMiddleware(env, 'login'), local.deleteList(env));
 	auth.post("/changeList",			tokens.authenticateMiddleware(env, 'login'), local.changeList(env));
 	auth.post("/shareList", 			tokens.authenticateMiddleware(env, 'login'), local.shareList(env));
-	auth.post("/addItem",				tokens.authenticateMiddleware(env, 'login'), local.addItem(env));
+	auth.post("/addItemToList",				tokens.authenticateMiddleware(env, 'login'), local.addItemToList(env));
+	auth.post("/listItems",				tokens.authenticateMiddleware(env, 'login'), local.listItems(env));
 	auth.post("/removeItem",			tokens.authenticateMiddleware(env, 'login'), local.removeItem(env));
 	auth.post("/finishItem",			tokens.authenticateMiddleware(env, 'login'), local.finishItem(env));
 	return auth;

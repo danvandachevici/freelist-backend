@@ -19,8 +19,10 @@ private.getUser = function (env, email, shouldExist) {
 				return cb_auto(errors.internalServerError);
 			}
 			if ( ! doc) {
+				log.debug("User not found:", email);
 				return cb_auto(null, null);
 			}
+			log.info("Got user:", doc);
 			cb_auto(null, doc);
 		});
 	};
@@ -35,6 +37,7 @@ private.checkPass = function (pass) {
 		var salt = new Buffer(user.salt, 'base64');
 		var hash = crypto.createHmac("sha256", salt).update(pass).digest('hex');
 		if (hash !== user.pass) {
+			log.error("User pass wrong");
 			return cb_auto(errors.wrongLogin);
 		}
 		cb_auto(null);
@@ -57,6 +60,7 @@ private.loginToken = function (env, save) {
 		}
 		tokens.generate(env, 'login', user._id, expires, function (err, token){
 			if (err) {
+				log.error("Internal server error generating token:", err);
 				return cb_auto(errors.internalServerError);
 			}
 			cb_auto(null, token);
