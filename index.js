@@ -34,7 +34,7 @@ async.auto({
 			var url = 'mongodb://' +
 						mongoConfigObj.username + ":" + 
 						mongoConfigObj.password + "@" + 
-						mongoConfigObj.path + "?authMechanism=DEFAULT&authSource=admin";
+						mongoConfigObj.path + "?authMechanism=DEFAULT&authSource=" + mongoConfigObj.name;
 			mongoLib.connect(url, function(err, db) {
 				if (err) {
 					log.error("Error connecting to mongo: ", err);
