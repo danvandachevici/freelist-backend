@@ -129,6 +129,7 @@ local.finishItem = function (env) {
 			list_id 	: req.body.list_id.toLowerCase(),
 			user_id 	: req.auth.user_id
 		};
+		log.debug("Sending object:", o);
 
 		list.finishItem(env, o, private.treat_result(resp));
 	};
