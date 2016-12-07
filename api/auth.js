@@ -22,7 +22,6 @@ private.getUser = function (env, email, shouldExist) {
 				log.debug("User not found:", email);
 				return cb_auto(null, null);
 			}
-			log.info("Got user:", doc);
 			cb_auto(null, doc);
 		});
 	};
@@ -163,7 +162,7 @@ local.logout = function (env) {
 		tokens.check(env, 'login', tkn, function (err, res) {
 			if (err) {
 				if (err === "TokenExpired") {
-					return resp.status(200).json({status: false, reason: err});
+					return resp.status(401).send("Unauthorized");
 				} else {
 					return resp.status(501).send("Internal server error");
 				}
